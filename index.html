@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sofía — Secretaria Digital IA | BLK</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0b1622;
+    --surface:  #111f2e;
+    --card:     #162030;
+    --border:   #1e3048;
+    --teal:     #00c9b1;
+    --teal-dim: #00876e;
+    --teal-glow:rgba(0,201,177,.1);
+    --white:    #f0f8ff;
+    --muted:    #7a9ab5;
+    --in:       #162a3a;
+    --out:      #00876e;
+    --red:      #ff5e5e;
+  }
+
+  html, body { height: 100%; background: var(--bg); color: var(--white); font-family: 'Inter', system-ui, sans-serif; font-size: 15px; }
+
+  /* ── Key screen ── */
+  #key-screen {
+    height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: var(--bg);
+  }
+  .key-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px; padding: 40px 36px; width: 420px; max-width: 92vw;
+    display: flex; flex-direction: column; gap: 20px; text-align: center;
+  }
+  .key-logo { font-size: 40px; }
+  .key-box h2 { font-size: 22px; font-weight: 700; }
+  .key-box p  { font-size: 13px; color: var(--muted); line-height: 1.7; }
+  .key-box input {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 16px; color: var(--white);
+    font-size: 14px; width: 100%; outline: none; font-family: monospace;
+    transition: border-color .18s;
+  }
+  .key-box input:focus { border-color: var(--teal-dim); }
+  .key-box input::placeholder { color: var(--muted); font-family: system-ui; }
+  .key-btn {
+    background: var(--teal); color: var(--bg); border: none;
+    border-radius: 10px; padding: 13px; font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: opacity .18s;
+  }
+  .key-btn:hover { opacity: .88; }
+  .key-note { font-size: 11px; color: var(--muted); }
+  .key-note a { color: var(--teal); text-decoration: none; }
+  .key-error { color: var(--red); font-size: 12px; display: none; }
+
+  /* ── Chat layout ── */
+  #chat-screen { display: none; height: 100vh; }
+
+  .shell {
+    display: grid; grid-template-columns: 260px 1fr;
+    height: 100vh;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    background: var(--surface); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; padding: 24px 18px; gap: 22; overflow: hidden;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-icon { width: 36px; height: 36px; background: var(--teal); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+  .brand-name { font-weight: 700; font-size: 14px; }
+  .brand-sub  { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .divider { height: 1px; background: var(--border); margin: 4px 0; }
+  .sb-label { font-size: 10px; font-weight: 600; letter-spacing: .08em; color: var(--muted); text-transform: uppercase; margin-bottom: 10px; }
+
+  .clinic-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .clinic-name { font-weight: 600; font-size: 13px; }
+  .online-row  { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted); }
+  .online-dot  { width: 7px; height: 7px; border-radius: 50%; background: var(--teal); flex-shrink: 0; animation: pulse 2s ease-in-out infinite; }
+  .clinic-meta { font-size: 11px; color: var(--muted); }
+
+  .caps { display: flex; flex-direction: column; gap: 7px; }
+  .cap  { display: flex; align-items: center; gap: 9px; background: var(--card); border: 1px solid var(--border); border-radius: 9px; padding: 9px 11px; }
+  .cap-icon  { font-size: 15px; }
+  .cap-title { font-size: 12px; font-weight: 600; color: var(--white); }
+  .cap-desc  { font-size: 11px; color: var(--muted); }
+
+  .sb-footer { margin-top: auto; border-top: 1px solid var(--border); padding-top: 14px; font-size: 11px; color: var(--muted); text-align: center; line-height: 1.7; }
+  .sb-footer strong { color: var(--teal); }
+
+  /* Chat area */
+  .chat-area { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+  .topbar { display: flex; align-items: center; gap: 12px; padding: 14px 22px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .tb-avatar { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, var(--teal), var(--teal-dim)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .tb-name   { font-weight: 600; font-size: 14px; }
+  .tb-status { font-size: 12px; color: var(--teal); display: flex; align-items: center; gap: 5px; }
+  .tb-status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--teal); display: inline-block; animation: pulse 2s ease-in-out infinite; }
+  .tb-badge  { font-size: 11px; font-weight: 600; color: var(--teal); background: var(--teal-glow); border: 1px solid var(--teal-dim); border-radius: 20px; padding: 3px 10px; }
+  .reset-btn { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 8px; padding: 5px 12px; font-size: 12px; cursor: pointer; transition: all .18s; }
+  .reset-btn:hover { border-color: var(--teal); color: var(--teal); }
+
+  .messages { flex: 1; overflow-y: auto; padding: 24px 22px; display: flex; flex-direction: column; gap: 14px; scroll-behavior: smooth; }
+  .messages::-webkit-scrollbar { width: 4px; }
+  .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  /* Welcome */
+  .welcome { text-align: center; padding: 36px 20px; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+  .welcome-icon { width: 64px; height: 64px; border-radius: 50%; background: var(--teal-glow); border: 1px solid var(--teal-dim); display: flex; align-items: center; justify-content: center; font-size: 28px; }
+  .welcome h2 { font-size: 20px; font-weight: 700; }
+  .welcome p  { font-size: 13px; color: var(--muted); max-width: 340px; line-height: 1.7; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 4px; }
+  .chip { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 7px 14px; font-size: 12.5px; color: var(--muted); cursor: pointer; transition: all .18s; font-family: inherit; }
+  .chip:hover { border-color: var(--teal); color: var(--teal); background: var(--teal-glow); }
+
+  /* Bubbles */
+  .row { display: flex; align-items: flex-end; gap: 8px; max-width: 78%; animation: fadeUp .22s ease both; }
+  .row.user  { align-self: flex-end; flex-direction: row-reverse; }
+  .row.agent { align-self: flex-start; }
+  .av { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; margin-bottom: 2px; }
+  .av.a { background: linear-gradient(135deg, var(--teal), var(--teal-dim)); }
+  .av.u { background: #1e3a4a; }
+  .bubble { padding: 11px 15px; border-radius: 18px; font-size: 14px; line-height: 1.6; white-space: pre-wrap; }
+  .agent .bubble { background: var(--in); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+  .user  .bubble { background: var(--out); border-bottom-right-radius: 4px; }
+  .meta { font-size: 10.5px; color: var(--muted); padding: 3px 4px 0; }
+  .user .meta { text-align: right; }
+
+  /* Typing */
+  .typing-row { display: flex; align-items: flex-end; gap: 8px; align-self: flex-start; animation: fadeUp .22s ease both; }
+  .typing-bub { background: var(--in); border: 1px solid var(--border); border-radius: 18px; border-bottom-left-radius: 4px; padding: 12px 16px; display: flex; gap: 5px; align-items: center; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); animation: bounce 1.2s ease-in-out infinite; }
+  .dot:nth-child(2) { animation-delay: .18s; }
+  .dot:nth-child(3) { animation-delay: .36s; }
+
+  .err-bubble { align-self: flex-start; background: rgba(255,94,94,.1); border: 1px solid rgba(255,94,94,.3); border-radius: 12px; padding: 10px 14px; font-size: 13px; color: var(--red); max-width: 78%; animation: fadeUp .22s ease both; }
+
+  /* Input */
+  .input-area { padding: 14px 22px 18px; border-top: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
+  .input-row  { display: flex; gap: 10px; align-items: flex-end; }
+  .input-wrap { flex: 1; background: var(--card); border: 1px solid var(--border); border-radius: 14px; display: flex; align-items: flex-end; padding: 2px 6px 2px 14px; transition: border-color .18s; }
+  .input-wrap:focus-within { border-color: var(--teal-dim); }
+  #user-input { flex: 1; background: transparent; border: none; outline: none; color: var(--white); font-family: inherit; font-size: 14px; resize: none; padding: 10px 4px; max-height: 120px; line-height: 1.5; }
+  #user-input::placeholder { color: var(--muted); }
+  .send-btn { width: 42px; height: 42px; border-radius: 11px; background: var(--teal); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: opacity .18s; }
+  .send-btn:hover { opacity: .88; }
+  .send-btn:disabled { background: var(--border); cursor: not-allowed; }
+  .input-hint { text-align: center; font-size: 11px; color: var(--muted); margin-top: 10px; }
+
+  @keyframes pulse   { 0%,100%{opacity:1;transform:scale(1)}   50%{opacity:.5;transform:scale(.85)} }
+  @keyframes bounce  { 0%,80%,100%{transform:translateY(0);opacity:.5} 40%{transform:translateY(-5px);opacity:1} }
+  @keyframes fadeUp  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+  @media(max-width:680px) { .sidebar { display: none; } .shell { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<!-- ── Key Screen ── -->
+<div id="key-screen">
+  <div class="key-box">
+    <div class="key-logo">🤖</div>
+    <h2>Secretaria Digital IA</h2>
+    <p>Demo de <strong>BLK Ciberseguridad & IA</strong><br>Para activar el agente ingresa tu API key de Google AI Studio.<br>La key nunca sale de tu navegador.</p>
+    <input id="api-key-input" type="password" placeholder="Pega tu API key de Groq (gsk_...)" autocomplete="off" />
+    <div class="key-error" id="key-error">⚠️ API key inválida. Verifica en aistudio.google.com</div>
+    <button class="key-btn" onclick="startDemo()">Activar agente →</button>
+    <p class="key-note">¿No tienes key? Consíguela gratis en <a href="https://console.groq.com" target="_blank">console.groq.com</a></p>
+  </div>
+</div>
+
+<!-- ── Chat Screen ── -->
+<div id="chat-screen">
+  <div class="shell">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">🤖</div>
+        <div>
+          <div class="brand-name">Secretaria Digital</div>
+          <div class="brand-sub">BLK Ciberseguridad & IA</div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div>
+        <div class="sb-label">Clínica activa</div>
+        <div class="clinic-card">
+          <div class="clinic-name">Consultorio Dr. Méndez</div>
+          <div class="online-row"><span class="online-dot"></span>Agente en línea</div>
+          <div class="clinic-meta">🏥 Medicina general · Juárez</div>
+          <div class="clinic-meta">⏰ Lun–Vie 9am–7pm · Sáb 9am–2pm</div>
+          <div class="clinic-meta">💰 Consulta: $350 MXN</div>
+          <div class="clinic-meta">📞 (656) 555-0101</div>
+        </div>
+      </div>
+      <div>
+        <div class="sb-label">Capacidades</div>
+        <div class="caps">
+          <div class="cap"><span class="cap-icon">📅</span><div><div class="cap-title">Agenda citas</div><div class="cap-desc">Reserva y confirma automático</div></div></div>
+          <div class="cap"><span class="cap-icon">💬</span><div><div class="cap-title">Responde preguntas</div><div class="cap-desc">Precios, horarios, ubicación</div></div></div>
+          <div class="cap"><span class="cap-icon">🚨</span><div><div class="cap-title">Detecta urgencias</div><div class="cap-desc">Escala al doctor al instante</div></div></div>
+          <div class="cap"><span class="cap-icon">👤</span><div><div class="cap-title">Califica pacientes</div><div class="cap-desc">Recoge datos antes de consulta</div></div></div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="sb-footer"><strong>Demo en vivo</strong><br>Agente entrenado con los datos<br>reales del consultorio<br><br><strong>BLK Ciberseguridad & IA</strong></div>
+    </aside>
+
+    <!-- Chat -->
+    <div class="chat-area">
+      <div class="topbar">
+        <div class="tb-avatar">🏥</div>
+        <div style="flex:1">
+          <div class="tb-name">Consultorio Dr. Méndez</div>
+          <div class="tb-status">Sofía · Secretaria Digital activa</div>
+        </div>
+        <button class="reset-btn" onclick="resetChat()">↺ Reiniciar</button>
+        <div class="tb-badge">DEMO IA</div>
+      </div>
+
+      <div class="messages" id="messages">
+        <div class="welcome" id="welcome">
+          <div class="welcome-icon">🤖</div>
+          <h2>Secretaria Digital IA</h2>
+          <p>Soy Sofía, la asistente virtual del Consultorio Dr. Méndez. Escríbeme como si fueras un paciente real.</p>
+          <div class="chips">
+            <button class="chip" onclick="sendQuick('Quiero agendar una cita')">📅 Quiero una cita</button>
+            <button class="chip" onclick="sendQuick('¿Cuánto cuesta la consulta?')">💰 ¿Cuánto cuesta?</button>
+            <button class="chip" onclick="sendQuick('Tengo un dolor muy fuerte en el pecho')">🚨 Es urgente</button>
+            <button class="chip" onclick="sendQuick('¿A qué hora abren?')">⏰ Horarios</button>
+            <button class="chip" onclick="sendQuick('¿Dónde están ubicados?')">📍 Ubicación</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="input-area">
+        <div class="input-row">
+          <div class="input-wrap">
+            <textarea id="user-input" rows="1" placeholder="Escribe como si fueras un paciente…" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+          </div>
+          <button class="send-btn" id="send-btn" onclick="sendMessage()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#0b1622"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          </button>
+        </div>
+        <div class="input-hint">Prueba pedir una cita · preguntar precio · simular urgencia</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const SYSTEM = `Eres Sofía, la secretaria virtual del Consultorio Dr. Méndez en Ciudad Juárez, Chihuahua.
+
+DATOS DEL CONSULTORIO:
+- Doctor: Dr. Carlos Méndez — Medicina general y familiar
+- Dirección: Av. Tecnológico 2240, Col. Partido Romero, Ciudad Juárez
+- Teléfono: (656) 555-0101
+- Horario: Lunes a Viernes 9:00am–7:00pm, Sábados 9:00am–2:00pm
+- Precio consulta: $350 MXN
+- Servicios: consulta general, revisión pediátrica, certificados médicos, control de peso, presión arterial, vacunación adultos
+- Horarios disponibles: mañana martes 10am, mañana martes 11:30am, mañana martes 4pm, miércoles 9am, miércoles 3:30pm, jueves 10am, viernes 9am
+
+PERSONALIDAD:
+- Cálida, profesional, nunca robótica. Máximo 3-4 oraciones por mensaje.
+- Español mexicano natural. 1-2 emojis por mensaje máximo.
+- Nunca digas que eres IA a menos que te pregunten directamente.
+
+FLUJO PARA AGENDAR:
+1. Pregunta el motivo si no lo dijeron
+2. Ofrece 2-3 horarios disponibles
+3. Pide nombre completo y celular
+4. Confirma la cita con todos los datos
+
+URGENCIAS (dolor de pecho, no puede respirar, pérdida de conciencia, sangrado intenso, accidente):
+→ Responde: "Esto parece una emergencia. Llama al 911 de inmediato. También aviso al doctor ahora." + da el teléfono del consultorio.
+
+NO DIAGNOSTIQUES. Si piden consejo médico → "Eso lo evalúa el doctor en consulta, ¿agendamos?"`;
+
+let apiKey = '';
+let history = [];
+let isLoading = false;
+
+function startDemo() {
+  const key = document.getElementById('api-key-input').value.trim();
+  if (!key || key.length < 10) {
+    document.getElementById('key-error').textContent = '⚠️ Pega tu API key de Groq antes de continuar (empieza con gsk_)';
+    document.getElementById('key-error').style.display = 'block';
+    return;
+  }
+  apiKey = key;
+  document.getElementById('key-screen').style.display = 'none';
+  document.getElementById('chat-screen').style.display = 'block';
+  document.getElementById('user-input').focus();
+}
+
+document.getElementById('api-key-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') startDemo();
+});
+
+function getTime() {
+  return new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function scrollBottom() {
+  const m = document.getElementById('messages');
+  setTimeout(() => m.scrollTop = m.scrollHeight, 50);
+}
+
+function hideWelcome() {
+  const w = document.getElementById('welcome');
+  if (w) w.remove();
+}
+
+function sendQuick(text) {
+  document.getElementById('user-input').value = text;
+  sendMessage();
+}
+
+function setLoading(state) {
+  isLoading = state;
+  document.getElementById('send-btn').disabled = state;
+  document.getElementById('user-input').disabled = state;
+}
+
+function esc(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+function addBubble(role, text) {
+  hideWelcome();
+  const wrap = document.getElementById('messages');
+  const isUser = role === 'user';
+  const div = document.createElement('div');
+  div.className = `row ${isUser ? 'user' : 'agent'}`;
+  div.innerHTML = `
+    <div class="av ${isUser ? 'u' : 'a'}">${isUser ? '👤' : '🤖'}</div>
+    <div>
+      <div class="bubble">${esc(text)}</div>
+      <div class="meta">${isUser ? getTime() : `Sofía · ${getTime()}`}</div>
+    </div>`;
+  wrap.appendChild(div);
+  scrollBottom();
+}
+
+function showTyping() {
+  const wrap = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'typing-row'; div.id = 'typing';
+  div.innerHTML = `<div class="av a">🤖</div><div class="typing-bub"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+  wrap.appendChild(div);
+  scrollBottom();
+}
+
+function removeTyping() {
+  const t = document.getElementById('typing');
+  if (t) t.remove();
+}
+
+function addError(msg) {
+  const wrap = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = 'err-bubble';
+  div.textContent = '⚠️ ' + msg;
+  wrap.appendChild(div);
+  scrollBottom();
+}
+
+async function sendMessage() {
+  if (isLoading) return;
+  const input = document.getElementById('user-input');
+  const text = input.value.trim();
+  if (!text) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+
+  addBubble('user', text);
+  history.push({ role: 'user', parts: [{ text }] });
+  setLoading(true);
+  showTyping();
+
+  try {
+    // Construir historial con system prompt como primer turno
+    const contents = [
+      { role: 'user', parts: [{ text: 'Instrucciones de sistema:\n\n' + SYSTEM + '\n\nConfirma que entendiste tu rol.' }] },
+      { role: 'model', parts: [{ text: '¡Entendido! Soy Sofía, la secretaria virtual del Consultorio Dr. Méndez. Estoy lista para atender pacientes.' }] },
+      ...history
+    ];
+
+    const res = await fetch(
+      'https://api.groq.com/openai/v1/chat/completions',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + apiKey
+        },
+        body: JSON.stringify({
+          model: 'llama-3.1-8b-instant',
+          messages: [
+            { role: 'system', content: SYSTEM },
+            ...history.map(m => ({ role: m.role === 'model' ? 'assistant' : m.role, content: m.parts[0].text }))
+          ],
+          max_tokens: 400,
+          temperature: 0.7
+        })
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      const errMsg = data?.error?.message || 'Error ' + res.status;
+      if (res.status === 400 || res.status === 401 || res.status === 403) {
+        removeTyping(); setLoading(false);
+        document.getElementById('chat-screen').style.display = 'none';
+        document.getElementById('key-screen').style.display = 'flex';
+        document.getElementById('key-error').textContent = 'API key inválida o sin permisos: ' + errMsg;
+        document.getElementById('key-error').style.display = 'block';
+        return;
+      }
+      throw new Error(errMsg);
+    }
+
+    const reply = data.choices?.[0]?.message?.content || '';
+    history.push({ role: 'model', parts: [{ text: reply }] });
+    removeTyping();
+    addBubble('agent', reply);
+
+  } catch (e) {
+    removeTyping();
+    console.error('Error completo:', e);
+    addError('Error: ' + (e.message || 'Sin detalles') + ' | Abre consola (F12) para más info.');
+  } finally {
+    setLoading(false);
+    input.focus();
+  }
+}
+
+function resetChat() {
+  history = [];
+  const wrap = document.getElementById('messages');
+  wrap.innerHTML = `
+    <div class="welcome" id="welcome">
+      <div class="welcome-icon">🤖</div>
+      <h2>Secretaria Digital IA</h2>
+      <p>Soy Sofía, la asistente virtual del Consultorio Dr. Méndez. Escríbeme como si fueras un paciente real.</p>
+      <div class="chips">
+        <button class="chip" onclick="sendQuick('Quiero agendar una cita')">📅 Quiero una cita</button>
+        <button class="chip" onclick="sendQuick('¿Cuánto cuesta la consulta?')">💰 ¿Cuánto cuesta?</button>
+        <button class="chip" onclick="sendQuick('Tengo un dolor muy fuerte en el pecho')">🚨 Es urgente</button>
+        <button class="chip" onclick="sendQuick('¿A qué hora abren?')">⏰ Horarios</button>
+        <button class="chip" onclick="sendQuick('¿Dónde están ubicados?')">📍 Ubicación</button>
+      </div>
+    </div>`;
+}
+</script>
+</body>
+</html>
