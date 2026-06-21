@@ -56,7 +56,7 @@
   .key-error { color: var(--red); font-size: 12px; display: none; }
 
   /* ── Chat layout ── */
-  #chat-screen { display: none; height: 100vh; }
+  #chat-screen { display: block; height: 100vh; }
 
   .shell {
     display: grid; grid-template-columns: 260px 1fr;
@@ -159,7 +159,7 @@
 <body>
 
 <!-- ── Key Screen ── -->
-<div id="key-screen">
+<div id="key-screen" style="display:none">
   <div class="key-box">
     <div class="key-logo">🤖</div>
     <h2>Secretaria Digital IA</h2>
@@ -401,13 +401,10 @@ async function sendMessage() {
     ];
 
     const res = await fetch(
-      'https://api.groq.com/openai/v1/chat/completions',
+      'https://sofia-proxy.1120postep.workers.dev',
       {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + apiKey
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'llama-3.1-8b-instant',
           messages: [
@@ -424,14 +421,6 @@ async function sendMessage() {
 
     if (!res.ok) {
       const errMsg = data?.error?.message || 'Error ' + res.status;
-      if (res.status === 400 || res.status === 401 || res.status === 403) {
-        removeTyping(); setLoading(false);
-        document.getElementById('chat-screen').style.display = 'none';
-        document.getElementById('key-screen').style.display = 'flex';
-        document.getElementById('key-error').textContent = 'API key inválida o sin permisos: ' + errMsg;
-        document.getElementById('key-error').style.display = 'block';
-        return;
-      }
       throw new Error(errMsg);
     }
 
